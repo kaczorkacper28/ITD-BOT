@@ -42,28 +42,16 @@ const questions = [
 ].map(([q, options, correct]) => ({ q, options, correct }));
 
 const rankRoles = [
-['👑 Główny Inspektor Transportu Drogowego',0x123b2a],
-['⭐ Zastępca Głównego Inspektora Transportu Drogowego',0x8b7500],
-['🏛️ Dyrektor Generalny GITD',0x174a35],
-['🏢 Dyrektor Biura / Departamentu',0x176b3a],
-['🎖️ Zastępca Dyrektora',0x247a50],
-['📋 Naczelnik Wydziału',0x2e8b57],
-['📋 Zastępca Naczelnika Wydziału',0x3aa76d],
-['🟢 Główny Inspektor',0x0b8f4a],
-['🟢 Starszy Inspektor',0x17a65a],
-['🟢 Inspektor',0x22b573],
-['🟢 Młodszy Inspektor',0x55c98b],
-['🟡 Aplikant Inspekcji',0xd9b51c],
-['🔰 Kandydat na Inspektora',0x808080]
+['👑 Główny Inspektor Transportu Drogowego',0x123b2a],['⭐ Zastępca Głównego Inspektora Transportu Drogowego',0x8b7500],['🏛️ Dyrektor Generalny GITD',0x174a35],['🏢 Dyrektor Biura / Departamentu',0x176b3a],['🎖️ Zastępca Dyrektora',0x247a50],['📋 Naczelnik Wydziału',0x2e8b57],['📋 Zastępca Naczelnika Wydziału',0x3aa76d],['🟢 Główny Inspektor',0x0b8f4a],['🟢 Starszy Inspektor',0x17a65a],['🟢 Inspektor',0x22b573],['🟢 Młodszy Inspektor',0x55c98b],['🟡 Aplikant Inspekcji',0xd9b51c],['🔰 Kandydat na Inspektora',0x808080]
 ];
 const extraRoles = [
-['🎓 Instruktor ITD',0x2878c7],['📝 Egzaminator ITD',0x3b82f6],['👨‍🏫 Wykładowca',0x4f8ad9],['🚦 Instruktor Kontroli Drogowej',0x2563eb],
-['🚔 Dowódca Zespołu Kontrolnego',0x1f6f8b],['🚛 Inspektor Transportu Drogowego',0x218c6a],['⚙️ Inspektor Techniczny',0x6b7280],['📡 Inspektor CANARD',0x7c3aed],['🚨 Inspektor Kontroli Drogowej',0xef4444],['🔎 Inspektor ds. Przewozów',0x0891b2],['📑 Inspektor ds. Dokumentacji',0x64748b],
-['🟢 Pracownik ITD',0x16a34a],['🟢 Na służbie',0x22c55e],['⚫ Poza służbą',0x374151],['💤 Urlopowany',0x6b7280],['🎓 W trakcie szkolenia',0x2563eb],['⏳ Okres próbny',0xca8a04],['📋 Rekrutacja',0x94a3b8],['🏅 Zasłużony Inspektor',0xeab308],['🎖️ Emerytowany Inspektor',0x9ca3af],
-['👑 Właściciel',0xdc2626],['🛡️ Zarząd ITD',0xb91c1c],['🔨 Administrator',0xef4444],['🔧 Moderator',0xf97316],['🧰 Support',0x14b8a6],['🤖 Bot',0x64748b],['📝 Rekruter',0x8b5cf6],
-['🚔 Patrol Drogowy',0x0ea5e9],['🚛 Kontrola Transportu Ciężarowego',0x0284c7],['🚌 Kontrola Autobusów',0x0369a1],['🚕 Kontrola Transportu Osobowego',0x0e7490],['📡 CANARD',0x7e22ce],['⚠️ Kontrola Prędkości',0xf59e0b],['🧪 Kontrola Stanu Technicznego',0x65a30d],['📑 Kontrola Dokumentów',0x64748b],
-['Application',0x22c55e],['Exam',0x3b82f6],['Candidate',0xf59e0b],['Staff',0xdc2626]
+['🎓 Instruktor ITD',0x2878c7],['📝 Egzaminator ITD',0x3b82f6],['👨‍🏫 Wykładowca',0x4f8ad9],['🚦 Instruktor Kontroli Drogowej',0x2563eb],['🚔 Dowódca Zespołu Kontrolnego',0x1f6f8b],['🚛 Inspektor Transportu Drogowego',0x218c6a],['⚙️ Inspektor Techniczny',0x6b7280],['📡 Inspektor CANARD',0x7c3aed],['🚨 Inspektor Kontroli Drogowej',0xef4444],['🔎 Inspektor ds. Przewozów',0x0891b2],['📑 Inspektor ds. Dokumentacji',0x64748b],['🟢 Pracownik ITD',0x16a34a],['🟢 Na służbie',0x22c55e],['⚫ Poza służbą',0x374151],['💤 Urlopowany',0x6b7280],['🎓 W trakcie szkolenia',0x2563eb],['⏳ Okres próbny',0xca8a04],['📋 Rekrutacja',0x94a3b8],['🏅 Zasłużony Inspektor',0xeab308],['🎖️ Emerytowany Inspektor',0x9ca3af],['👑 Właściciel',0xdc2626],['🛡️ Zarząd ITD',0xb91c1c],['🔨 Administrator',0xef4444],['🔧 Moderator',0xf97316],['🧰 Support',0x14b8a6],['🤖 Bot',0x64748b],['📝 Rekruter',0x8b5cf6],['🚔 Patrol Drogowy',0x0ea5e9],['🚛 Kontrola Transportu Ciężarowego',0x0284c7],['🚌 Kontrola Autobusów',0x0369a1],['🚕 Kontrola Transportu Osobowego',0x0e7490],['📡 CANARD',0x7e22ce],['⚠️ Kontrola Prędkości',0xf59e0b],['🧪 Kontrola Stanu Technicznego',0x65a30d],['📑 Kontrola Dokumentów',0x64748b],['Application',0x22c55e],['Exam',0x3b82f6],['Candidate',0xf59e0b],['Staff',0xdc2626]
 ];
+
+// Zarząd i najwyższe kierownictwo otrzymują pełne uprawnienia Discorda.
+const managementRoles = new Set([
+'👑 Właściciel','🛡️ Zarząd ITD','👑 Główny Inspektor Transportu Drogowego','⭐ Zastępca Głównego Inspektora Transportu Drogowego','🏛️ Dyrektor Generalny GITD','🏢 Dyrektor Biura / Departamentu','🎖️ Zastępca Dyrektora','📋 Naczelnik Wydziału','📋 Zastępca Naczelnika Wydziału'
+]);
 
 const categories = {
 '📢 INFORMACJE':['📢・witamy-w-itd','📜・informacje-itd','📋・regulamin-serwera','📕・regulamin-itd','📖・zasady-służby','📢・ogłoszenia','📅・ważne-daty','❓・faq'],
@@ -84,6 +72,9 @@ function cleanName(name){ return name.toLowerCase().replace(/[🟢👑⭐🏛️
 async function getOrCreateRole(guild, name, color, options={}) {
   let role = guild.roles.cache.find(r => r.name === name);
   if (!role) role = await guild.roles.create({ name, color, ...options });
+  if (managementRoles.has(name) && !role.permissions.has(PermissionsBitField.Flags.Administrator)) {
+    await role.setPermissions(PermissionsBitField.Flags.Administrator).catch(() => {});
+  }
   return role;
 }
 async function getOrCreateCategory(guild, name) {
@@ -104,7 +95,12 @@ async function setupITD(guild) {
   for (const [name,color] of [...rankRoles,...extraRoles]) roleMap[name] = await getOrCreateRole(guild,name,color);
   const staff = roleMap['Staff'];
   const candidate = roleMap['Candidate'];
-  const overwritesStaff = [{id:everyone.id,deny:[PermissionsBitField.Flags.ViewChannel]},{id:staff.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]}];
+  const management = [...managementRoles].map(n => roleMap[n]).filter(Boolean);
+  const overwritesStaff = [
+    {id:everyone.id,deny:[PermissionsBitField.Flags.ViewChannel]},
+    {id:staff.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]},
+    ...management.map(r => ({id:r.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory,PermissionsBitField.Flags.ManageChannels,PermissionsBitField.Flags.ManageMessages]}))
+  ];
   const overwritesCandidate = [{id:everyone.id,deny:[PermissionsBitField.Flags.ViewChannel]},{id:candidate.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]}];
   const created = [];
   for (const [catName, channelNames] of Object.entries(categories)) {
@@ -115,19 +111,14 @@ async function setupITD(guild) {
       created.push(ch.name);
     }
   }
-  const appRole = roleMap['Application'];
-  const examRole = roleMap['Exam'];
   const appChannel = guild.channels.cache.find(c=>c.name==='podanie-do-itd');
   if (appChannel) await appChannel.send(applicationPanel()).catch(()=>{});
   const examChannel = guild.channels.cache.find(c=>c.name==='egzaminy');
   if (examChannel) await examChannel.send({embeds:[examPanel()],components:[examStartRow()]}).catch(()=>{});
-  return { roleCount:Object.keys(roleMap).length, channelCount:created.length, appRole, examRole, candidate, staff };
+  return { roleCount:Object.keys(roleMap).length, channelCount:created.length };
 }
 
-function applicationPanel(){
- const embed = new EmbedBuilder().setColor(0x16a34a).setTitle('📝 PODANIE DO ITD').setDescription('Kliknij przycisk poniżej i wypełnij formularz rekrutacyjny. Po wysłaniu podanie trafia do kadry.');
- return {embeds:[embed],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('itd_apply').setLabel('📝 Złóż podanie').setStyle(ButtonStyle.Success))]};
-}
+function applicationPanel(){ const embed = new EmbedBuilder().setColor(0x16a34a).setTitle('📝 PODANIE DO ITD').setDescription('Kliknij przycisk poniżej i wypełnij formularz rekrutacyjny. Po wysłaniu podanie trafia do kadry.'); return {embeds:[embed],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('itd_apply').setLabel('📝 Złóż podanie').setStyle(ButtonStyle.Success))]}; }
 function examPanel(){return new EmbedBuilder().setColor(0x2563eb).setTitle('🎓 EGZAMIN ITD').setDescription(`Egzamin: **${questions.length} pytań**. Próg: **${PASS_SCORE}/${questions.length}**.`);}
 function examStartRow(){return new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('itd_exam_confirm_start').setLabel('🎓 Rozpocznij egzamin').setStyle(ButtonStyle.Primary));}
 function questionMessage(i){const q=questions[i];const menu=new StringSelectMenuBuilder().setCustomId(`itd_exam_answer_${i}`).setPlaceholder('Wybierz odpowiedź...').addOptions(q.options.map((x,n)=>({label:`${String.fromCharCode(65+n)}. ${x}`.slice(0,100),value:String(n)})));return {embeds:[new EmbedBuilder().setColor(0x2563eb).setTitle(`🎓 Egzamin ITD • ${i+1}/${questions.length}`).setDescription(`**${q.q}**`)],components:[new ActionRowBuilder().addComponents(menu)]};}
@@ -144,7 +135,7 @@ client.once('ready',async()=>{console.log(`Zalogowano jako ${client.user.tag}`);
 
 client.on('interactionCreate',async interaction=>{try{
  if(interaction.isChatInputCommand()){
-  if(interaction.commandName==='itd-setup'){await interaction.deferReply({ephemeral:true});const r=await setupITD(interaction.guild);return interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n📝 Utworzono/odnaleziono: Application, Exam, Candidate, Staff oraz pełną strukturę ITD.`);}
+  if(interaction.commandName==='itd-setup'){await interaction.deferReply({ephemeral:true});const r=await setupITD(interaction.guild);return interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n🛡️ Role Zarządu otrzymały **Administratora / pełne uprawnienia**.`);}
   if(interaction.commandName==='itd-panel'){await interaction.channel.send(applicationPanel());return interaction.reply({content:'✅ Panel podań wysłany.',ephemeral:true});}
   if(interaction.commandName==='itd-egzamin'){await interaction.channel.send({embeds:[examPanel()],components:[examStartRow()]});return interaction.reply({content:'✅ Panel egzaminu wysłany.',ephemeral:true});}
  }
