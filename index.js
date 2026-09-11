@@ -18,7 +18,6 @@ if (!TOKEN || !CLIENT_ID || !GUILD_ID) {
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 const examSessions = new Map();
 
-// TRUDNY EGZAMIN ITD - 35 PYTAŃ
 const questions = [
 ['Co oznacza skrót ITD?',['Inspekcja Techniczna Drogowa','Inspekcja Transportu Drogowego','Inspekcja Taboru Drogowego','Inspektorat Transportu Drogowego'],1],
 ['Jaki jest główny cel ITD w RP?',['Zatrzymywanie każdego pojazdu','Nadzór nad przestrzeganiem zasad transportu drogowego i bezpieczeństwem','Prowadzenie każdej sprawy karnej','Zastępowanie wszystkich służb'],1],
@@ -57,7 +56,6 @@ const questions = [
 ['Jaki powinien być główny cel służby ITD w RP?',['Zdobywanie pieniędzy','Zdobywanie statystyk','Prawidłowa realizacja zadań służby, bezpieczeństwo i dobra jakość RP','Kontrolowanie każdego gracza bez powodu'],2]
 ].map(([q, options, correct]) => ({ q, options, correct }));
 
-// ODDZIELNY EGZAMIN USTNY - pytania dla egzaminatora
 const oralQuestions = [
 'Zatrzymujesz pojazd do kontroli, a kierowca od początku jest agresywny i odmawia współpracy. Opisz krok po kroku, jak postępujesz.',
 'Podczas kontroli znajdujesz poważną nieprawidłowość, a kierowca proponuje Ci pieniądze za jej pominięcie. Jak reagujesz?',
@@ -80,7 +78,7 @@ const rankRoles = [
 ['👑 Główny Inspektor Transportu Drogowego',0x123b2a],['⭐ Zastępca Głównego Inspektora Transportu Drogowego',0x8b7500],['🏛️ Dyrektor Generalny GITD',0x174a35],['🏢 Dyrektor Biura / Departamentu',0x176b3a],['🎖️ Zastępca Dyrektora',0x247a50],['📋 Naczelnik Wydziału',0x2e8b57],['📋 Zastępca Naczelnika Wydziału',0x3aa76d],['🟢 Główny Inspektor',0x0b8f4a],['🟢 Starszy Inspektor',0x17a65a],['🟢 Inspektor',0x22b573],['🟢 Młodszy Inspektor',0x55c98b],['🟡 Aplikant Inspekcji',0xd9b51c],['🔰 Kandydat na Inspektora',0x808080]
 ];
 const extraRoles = [
-['🎓 Instruktor ITD',0x2878c7],['📝 Egzaminator ITD',0x3b82f6],['👨‍🏫 Wykładowca',0x4f8ad9],['🚦 Instruktor Kontroli Drogowej',0x2563eb],['🚔 Dowódca Zespołu Kontrolnego',0x1f6f8b],['🚛 Inspektor Transportu Drogowego',0x218c6a],['⚙️ Inspektor Techniczny',0x6b7280],['📡 Inspektor CANARD',0x7c3aed],['🚨 Inspektor Kontroli Drogowej',0xef4444],['🔎 Inspektor ds. Przewozów',0x0891b2],['📑 Inspektor ds. Dokumentacji',0x64748b],['🟢 Pracownik ITD',0x16a34a],['🟢 Na służbie',0x22c55e],['⚫ Poza służbą',0x374151],['💤 Urlopowany',0x6b7280],['🎓 W trakcie szkolenia',0x2563eb],['⏳ Okres próbny',0xca8a04],['📋 Rekrutacja',0x94a3b8],['🏅 Zasłużony Inspektor',0xeab308],['🎖️ Emerytowany Inspektor',0x9ca3af],['👑 Właściciel',0xdc2626],['🛡️ Zarząd ITD',0xb91c1c],['🔨 Administrator',0xef4444],['🔧 Moderator',0xf97316],['🧰 Support',0x14b8a6],['🤖 Bot',0x64748b],['📝 Rekruter',0x8b5cf6],['🚔 Patrol Drogowy',0x0ea5e9],['🚛 Kontrola Transportu Ciężarowego',0x0284c7],['🚌 Kontrola Autobusów',0x0369a1],['🚕 Kontrola Transportu Osobowego',0x0e7490],['📡 CANARD',0x7e22ce],['⚠️ Kontrola Prędkości',0xf59e0b],['🧪 Kontrola Stanu Technicznego',0x65a30d],['📑 Kontrola Dokumentów',0x64748b],['Application',0x22c55e],['Exam',0x3b82f6],['Candidate',0xf59e0b],['Staff',0xdc2626]
+['🎓 Instruktor ITD',0x2878c7],['📝 Egzaminator ITD',0x3b82f6],['👨‍🏫 Wykładowca',0x4f8ad9],['🚦 Instruktor Kontroli Drogowej',0x2563eb],['🚔 Dowódca Zespołu Kontrolnego',0x1f6f8b],['🚛 Inspektor Transportu Drogowego',0x218c6a],['⚙️ Inspektor Techniczny',0x6b7280],['📡 Inspektor CANARD',0x7c3aed],['🚨 Inspektor Kontroli Drogowej',0xef4444],['🔎 Inspektor ds. Przewozów',0x0891b2],['📑 Inspektor ds. Dokumentacji',0x64748b],['🟢 Pracownik ITD',0x16a34a],['🟢 Na służbie',0x22c55e],['⚫ Poza służbą',0x374151],['💤 Urlopowany',0x6b7280],['🎓 W trakcie szkolenia',0x2563eb],['⏳ Okres próbny',0xca8a04],['📋 Rekrutacja',0x94a3b8],['🏅 Zasłużony Inspektor',0xeab308],['🎖️ Emerytowany Inspektor',0x9ca3af],['👑 Właściciel',0xdc2626],['🛡️ Zarząd ITD',0xb91c1c],['🔨 Administrator',0xef4444],['🔧 Moderator',0xf97316],['🧰 Support',0x14b8a6],['🤖 Bot',0x64748b],['📝 Rekruter',0x8b5cf6],['🚔 Patrol Drogowy',0x0ea5e9],['🚛 Kontrola Transportu Ciężarowego',0x0284c7],['🚌 Kontrola Autobusów',0x0369a1],['🚕 Kontrola Transportu Osobowego',0x0e7490],['📡 CANARD',0x7e22ce],['⚠️ Kontrola Prędkości',0xf59e0b],['🧪 Kontrola Stanu Technicznego',0x65a30d],['📑 Kontrola Dokumentów',0x64748b],['Application',0x22c55e],['Exam',0x3b82f6],['Candidate',0xf59e0b],['Staff',0xdc2626],['👤 Obywatel',0x3498db]
 ];
 
 const managementRoles = new Set([
@@ -89,6 +87,7 @@ const managementRoles = new Set([
 
 const categories = {
 '📢 INFORMACJE':['📢・witamy-w-itd','📜・informacje-itd','📋・regulamin-serwera','📕・regulamin-itd','📖・zasady-służby','📢・ogłoszenia','📅・ważne-daty','❓・faq'],
+'👥 STREFA OBYWATELA':['👋・powitanie-obywatela','📢・ogłoszenia-dla-obywateli','📜・informacje-dla-obywateli','❓・pytania-obywateli','📩・kontakt-z-itd','📝・rekrutacja-itd'],
 '🏛️ GŁÓWNY INSPEKTORAT':['👑・gabinet-głównego-inspektora','⭐・kierownictwo-itd','📋・zarządzenia','📜・decyzje','📢・komunikaty-kierownictwa','📁・dokumenty-kierownictwa','📊・raporty-kierownictwa'],
 '👮 KADRA ITD':['👮・kadra-itd','📋・lista-inspektorów','🎖️・stopnie-i-awanse','📊・statystyki-inspektorów','📅・grafik-służby','📝・raporty-służbowe','📂・akta-funkcjonariuszy','🏅・wyróżnienia','⚠️・kary-dyscyplinarne'],
 '🚛 KONTROLE DROGOWE':['🚛・kontrole-drogowe','🚔・patrole','📍・punkty-kontrolne','🛣️・trasy-kontrolne','🚚・transport-ciężarowy','🚌・transport-autobusowy','🚕・transport-osobowy','⚙️・stan-techniczny','📑・kontrola-dokumentów','⚠️・naruszenia'],
@@ -101,14 +100,12 @@ const categories = {
 '🔒 KANAŁY KADRY':['🔒・gabinet-kadry','🔒・narady','🔒・sprawy-dyscyplinarne','🔒・awanse-i-degradacje','🔒・zwolnienia','🔒・ocena-inspektorów','🔒・wewnętrzne-dokumenty']
 };
 
-function cleanName(name){ return name.toLowerCase().replace(/[🟢👑⭐🏛️🏢🎖️📋📢📜📖📅❓👮🚛🚔📍🛣️🚚🚌🚕⚙️📑📡📷🚦⚡📸🛠️🎓📚📝❔🎫📁🚨📻⚠️🚑🔒]/gu,'').replace(/・/g,'-').trim(); }
+function cleanName(name){ return name.toLowerCase().replace(/[🟢👑⭐🏛️🏢🎖️📋📢📜📖📅❓👮🚛🚔📍🛣️🚚🚌🚕⚙️📑📡📷🚦⚡📸🛠️🎓📚📝❔🎫📁🚨📻⚠️🚑🔒👥👋📩]/gu,'').replace(/・/g,'-').trim(); }
 
 async function getOrCreateRole(guild, name, color, options={}) {
   let role = guild.roles.cache.find(r => r.name === name);
   if (!role) role = await guild.roles.create({ name, color, ...options });
-  if (managementRoles.has(name) && !role.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    await role.setPermissions(PermissionsBitField.Flags.Administrator).catch(() => {});
-  }
+  if (managementRoles.has(name) && !role.permissions.has(PermissionsBitField.Flags.Administrator)) await role.setPermissions(PermissionsBitField.Flags.Administrator).catch(() => {});
   return role;
 }
 async function getOrCreateCategory(guild, name) {
@@ -129,10 +126,16 @@ async function setupITD(guild) {
   for (const [name,color] of [...rankRoles,...extraRoles]) roleMap[name] = await getOrCreateRole(guild,name,color);
   const staff = roleMap['Staff'];
   const candidate = roleMap['Candidate'];
+  const citizen = roleMap['👤 Obywatel'];
   const management = [...managementRoles].map(n => roleMap[n]).filter(Boolean);
   const overwritesStaff = [
     {id:everyone.id,deny:[PermissionsBitField.Flags.ViewChannel]},
     {id:staff.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]},
+    ...management.map(r => ({id:r.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory,PermissionsBitField.Flags.ManageChannels,PermissionsBitField.Flags.ManageMessages]}))
+  ];
+  const overwritesCitizen = [
+    {id:everyone.id,deny:[PermissionsBitField.Flags.ViewChannel]},
+    {id:citizen.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]},
     ...management.map(r => ({id:r.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory,PermissionsBitField.Flags.ManageChannels,PermissionsBitField.Flags.ManageMessages]}))
   ];
   const created = [];
@@ -140,9 +143,14 @@ async function setupITD(guild) {
     const cat = await getOrCreateCategory(guild,catName);
     for (const channelName of channelNames) {
       const privateCat = catName === '🔒 KANAŁY KADRY';
-      const ch = await getOrCreateChannel(guild,channelName,cat,privateCat?overwritesStaff:[]);
+      const citizenCat = catName === '👥 STREFA OBYWATELA';
+      const ch = await getOrCreateChannel(guild,channelName,cat,citizenCat?overwritesCitizen:(privateCat?overwritesStaff:[]));
+      if (citizenCat) await ch.permissionOverwrites.set(overwritesCitizen).catch(()=>{});
+      if (privateCat) await ch.permissionOverwrites.set(overwritesStaff).catch(()=>{});
       created.push(ch.name);
     }
+    if (citizenCat) await cat.permissionOverwrites.set(overwritesCitizen).catch(()=>{});
+    if (privateCat) await cat.permissionOverwrites.set(overwritesStaff).catch(()=>{});
   }
   const appChannel = guild.channels.cache.find(c=>c.name==='podanie-do-itd');
   if (appChannel) await appChannel.send(applicationPanel()).catch(()=>{});
@@ -170,7 +178,7 @@ client.once('ready',async()=>{console.log(`Zalogowano jako ${client.user.tag}`);
 
 client.on('interactionCreate',async interaction=>{try{
  if(interaction.isChatInputCommand()){
-  if(interaction.commandName==='itd-setup'){await interaction.deferReply({ephemeral:true});const r=await setupITD(interaction.guild);return interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n🛡️ Role Zarządu otrzymały **Administratora / pełne uprawnienia**.\n🎓 Egzamin został ustawiony na **${questions.length} pytań**, próg **${PASS_SCORE}/${questions.length}**.`);}
+  if(interaction.commandName==='itd-setup'){await interaction.deferReply({ephemeral:true});const r=await setupITD(interaction.guild);return interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n👥 Strefa obywatela: tylko rola **Obywatel** + Zarząd.\n🛡️ Role Zarządu otrzymały **Administratora / pełne uprawnienia**.\n🎓 Egzamin: **${questions.length} pytań**, próg **${PASS_SCORE}/${questions.length}**.`);}
   if(interaction.commandName==='itd-panel'){await interaction.channel.send(applicationPanel());return interaction.reply({content:'✅ Panel podań wysłany.',ephemeral:true});}
   if(interaction.commandName==='itd-egzamin'){await interaction.channel.send({embeds:[examPanel()],components:[examStartRow()]});return interaction.reply({content:`✅ Panel trudnego egzaminu wysłany. ${questions.length} pytań, próg ${PASS_SCORE}/${questions.length}.`,ephemeral:true});}
   if(interaction.commandName==='itd-ustny'){await interaction.channel.send({embeds:[oralPanel()]});return interaction.reply({content:`✅ Wysłano ${oralQuestions.length} osobnych pytań ustnych ITD.`,ephemeral:true});}
