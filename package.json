@@ -1,0 +1,13 @@
+{
+  "name": "itd-bot",
+  "version": "1.0.0",
+  "description": "Discord bot dla Inspekcji Transportu Drogowego RP - podania i egzamin rekrutacyjny",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.1"
+  }
+}
