@@ -1,402 +1,177 @@
 require('dotenv').config();
-
 const {
-  Client,
-  GatewayIntentBits,
-  Partials,
-  REST,
-  Routes,
-  SlashCommandBuilder,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  StringSelectMenuBuilder,
-  PermissionsBitField
+  Client, GatewayIntentBits, PermissionsBitField, ChannelType,
+  REST, Routes, SlashCommandBuilder, EmbedBuilder,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder,
+  TextInputBuilder, TextInputStyle, StringSelectMenuBuilder
 } = require('discord.js');
 
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
-const APPLICATION_LOG_CHANNEL_ID = process.env.APPLICATION_LOG_CHANNEL_ID;
-const EXAM_LOG_CHANNEL_ID = process.env.EXAM_LOG_CHANNEL_ID;
-const CANDIDATE_ROLE_ID = process.env.CANDIDATE_ROLE_ID;
-const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
 const PASS_SCORE = Number(process.env.PASS_SCORE || 16);
-
 if (!TOKEN || !CLIENT_ID || !GUILD_ID) {
-  console.error('Brak TOKEN, CLIENT_ID lub GUILD_ID w zmiennych środowiskowych.');
+  console.error('Brak TOKEN, CLIENT_ID lub GUILD_ID.');
   process.exit(1);
 }
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-  partials: [Partials.Channel]
-});
-
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 const examSessions = new Map();
 
 const questions = [
-  {
-    q: 'Co oznacza skrót ITD?',
-    options: ['Inspekcja Techniczna Drogowa', 'Inspekcja Transportu Drogowego', 'Inspekcja Taboru Drogowego', 'Inspektorat Transportu Drogowego'],
-    correct: 1
-  },
-  {
-    q: 'Jaki jest główny cel ITD?',
-    options: ['Zatrzymywanie wszystkich kierowców', 'Nadzór nad przestrzeganiem przepisów dotyczących transportu drogowego', 'Prowadzenie postępowań karnych', 'Zastępowanie Policji'],
-    correct: 1
-  },
-  {
-    q: 'Co powinien zrobić inspektor przed rozpoczęciem kontroli?',
-    options: ['Natychmiast wystawić mandat', 'Przedstawić się i poinformować o celu kontroli', 'Zabrać dokumenty kierowcy bez słowa', 'Wezwać Policję'],
-    correct: 1
-  },
-  {
-    q: 'Kierowca odmawia wykonania polecenia inspektora. Co robisz?',
-    options: ['Zaczynasz się z nim kłócić', 'Zachowujesz spokój i postępujesz zgodnie z procedurami', 'Kończysz kontrolę bez dokumentacji', 'Opuszczasz miejsce bez zgłoszenia'],
-    correct: 1
-  },
-  {
-    q: 'Czy inspektor może wykorzystywać swoje stanowisko do celów prywatnych?',
-    options: ['Tak', 'Tylko poza służbą', 'Nie', 'Jeżeli nikt nie widzi'],
-    correct: 2
-  },
-  {
-    q: 'Co oznacza profesjonalizm inspektora?',
-    options: ['Krzyczenie na kierowców', 'Kulturalne, spokojne i zgodne z procedurami wykonywanie obowiązków', 'Wystawianie jak największej liczby kar', 'Ignorowanie poleceń przełożonych'],
-    correct: 1
-  },
-  {
-    q: 'Co należy zrobić po wykryciu poważnego naruszenia?',
-    options: ['Zignorować je', 'Postępować zgodnie z procedurą i udokumentować zdarzenie', 'Samodzielnie wymierzyć dowolną karę', 'Odjechać'],
-    correct: 1
-  },
-  {
-    q: 'Czy podczas służby należy wykonywać polecenia przełożonych?',
-    options: ['Tak, jeżeli są zgodne z regulaminem i procedurami', 'Nie', 'Tylko gdy polecenie jest wygodne', 'Tylko podczas kontroli'],
-    correct: 0
-  },
-  {
-    q: 'Co należy zrobić po zakończeniu kontroli?',
-    options: ['Nic', 'Sporządzić wymagane dokumenty lub raport', 'Usunąć informacje o kontroli', 'Natychmiast rozpocząć kolejną kontrolę'],
-    correct: 1
-  },
-  {
-    q: 'Czy inspektor powinien zachowywać bezstronność?',
-    options: ['Tak', 'Nie', 'Tylko wobec znajomych', 'Tylko podczas kontroli ciężarówek'],
-    correct: 0
-  },
-  {
-    q: 'Kierowca zaczyna obrażać inspektora. Co robisz?',
-    options: ['Obrażasz go również', 'Zachowujesz spokój i kontynuujesz czynności zgodnie z procedurą', 'Kończysz służbę', 'Zabierasz mu pojazd'],
-    correct: 1
-  },
-  {
-    q: 'Widzisz kolegę z ITD łamiącego regulamin. Co robisz?',
-    options: ['Ignorujesz', 'Zgłaszasz sytuację przełożonemu', 'Pomagasz mu', 'Publikujesz sytuację na Discordzie'],
-    correct: 1
-  },
-  {
-    q: 'Czy można udostępniać informacje służbowe osobom nieuprawnionym?',
-    options: ['Tak', 'Nie', 'Tylko znajomym', 'Tylko poza służbą'],
-    correct: 1
-  },
-  {
-    q: 'Co powinien zrobić inspektor, gdy potrzebna jest pomoc innej służby?',
-    options: ['Udawać, że nic się nie stało', 'Powiadomić właściwą służbę i współpracować z nią', 'Samodzielnie wykonywać wszystkie czynności', 'Odjechać'],
-    correct: 1
-  },
-  {
-    q: 'Co jest najważniejsze podczas służby?',
-    options: ['Statystyki', 'Dobra zabawa kosztem zasad', 'Bezpieczeństwo, procedury i prawidłowe wykonywanie obowiązków', 'Liczba wystawionych kar'],
-    correct: 2
-  },
-  {
-    q: 'Jak powinien zachowywać się profesjonalny inspektor podczas kontroli?',
-    options: ['Spokojnie, kulturalnie i zgodnie z procedurami', 'Krzyczeć', 'Grozić kierowcy', 'Ignorować kierowcę'],
-    correct: 0
-  },
-  {
-    q: 'Inspektor popełnił błąd podczas kontroli. Co powinien zrobić?',
-    options: ['Ukryć błąd', 'Zgłosić błąd przełożonemu i postąpić zgodnie z procedurą', 'Obwinić kierowcę', 'Usunąć dokumentację'],
-    correct: 1
-  },
-  {
-    q: 'Czy można samowolnie opuścić służbę?',
-    options: ['Tak', 'Nie, należy poinformować przełożonego i postępować zgodnie z zasadami', 'Tylko podczas kontroli', 'Zawsze'],
-    correct: 1
-  },
-  {
-    q: 'Co powinno znaleźć się w raporcie służbowym?',
-    options: ['Wyłącznie nick inspektora', 'Najważniejsze informacje dotyczące przebiegu służby i wykonanych czynności', 'Prywatne rozmowy', 'Losowe informacje'],
-    correct: 1
-  },
-  {
-    q: 'Co robisz, gdy podczas kontroli sytuacja zaczyna się eskalować?',
-    options: ['Prowokujesz kierowcę', 'Zachowujesz spokój, zabezpieczasz sytuację i wzywasz odpowiednie wsparcie', 'Uciekasz bez zgłoszenia', 'Ignorujesz sytuację'],
-    correct: 1
-  }
+['Co oznacza skrót ITD?',['Inspekcja Techniczna Drogowa','Inspekcja Transportu Drogowego','Inspekcja Taboru Drogowego','Inspektorat Transportu Drogowego'],1],
+['Jaki jest główny cel ITD?',['Zatrzymywanie wszystkich kierowców','Nadzór nad przestrzeganiem przepisów dotyczących transportu drogowego','Prowadzenie postępowań karnych','Zastępowanie Policji'],1],
+['Co powinien zrobić inspektor przed rozpoczęciem kontroli?',['Natychmiast wystawić mandat','Przedstawić się i poinformować o celu kontroli','Zabrać dokumenty bez słowa','Wezwać Policję'],1],
+['Kierowca odmawia wykonania polecenia. Co robisz?',['Kłócisz się','Zachowujesz spokój i działasz zgodnie z procedurami','Kończysz kontrolę','Odjeżdżasz'],1],
+['Czy inspektor może wykorzystywać stanowisko prywatnie?',['Tak','Tylko poza służbą','Nie','Jeżeli nikt nie widzi'],2],
+['Co oznacza profesjonalizm?',['Krzyk','Kultura, spokój i procedury','Jak najwięcej kar','Ignorowanie poleceń'],1],
+['Co zrobić po wykryciu poważnego naruszenia?',['Zignorować','Udokumentować i postępować zgodnie z procedurą','Wymyślić karę','Odjechać'],1],
+['Czy należy wykonywać polecenia przełożonych?',['Tak, jeśli są zgodne z regulaminem i procedurami','Nie','Tylko wygodne','Tylko podczas kontroli'],0],
+['Co zrobić po zakończeniu kontroli?',['Nic','Sporządzić wymaganą dokumentację/raport','Usunąć informacje','Natychmiast odjechać'],1],
+['Czy inspektor powinien być bezstronny?',['Tak','Nie','Tylko wobec znajomych','Tylko przy ciężarówkach'],0],
+['Kierowca obraża inspektora. Co robisz?',['Obrażasz go','Zachowujesz spokój i kontynuujesz czynności','Kończysz służbę','Zabierasz pojazd'],1],
+['Widzisz kolegę łamiącego regulamin. Co robisz?',['Ignorujesz','Zgłaszasz przełożonemu','Pomagasz','Publikujesz na Discordzie'],1],
+['Czy można udostępniać informacje służbowe osobom nieuprawnionym?',['Tak','Nie','Znajomym tak','Po służbie tak'],1],
+['Potrzebna jest pomoc innej służby. Co robisz?',['Ignorujesz','Powiadamiasz właściwą służbę i współpracujesz','Robisz wszystko sam','Odjeżdżasz'],1],
+['Co jest najważniejsze podczas służby?',['Statystyki','Zabawa kosztem zasad','Bezpieczeństwo, procedury i prawidłowe wykonywanie obowiązków','Liczba kar'],2],
+['Jak zachowuje się profesjonalny inspektor?',['Spokojnie, kulturalnie i zgodnie z procedurami','Krzyczy','Grozi','Ignoruje'],0],
+['Inspektor popełnił błąd. Co robi?',['Ukrywa','Zgłasza przełożonemu i postępuje zgodnie z procedurą','Obwinia kierowcę','Usuwa dokumentację'],1],
+['Czy można samowolnie opuścić służbę?',['Tak','Nie, trzeba poinformować przełożonego','Tylko podczas kontroli','Zawsze'],1],
+['Co powinien zawierać raport służbowy?',['Tylko nick','Najważniejsze informacje o służbie i czynnościach','Prywatne rozmowy','Losowe informacje'],1],
+['Co robisz, gdy kontrola zaczyna się eskalować?',['Prowokujesz','Zachowujesz spokój, zabezpieczasz sytuację i wzywasz wsparcie','Uciekasz bez zgłoszenia','Ignorujesz'],1]
+].map(([q, options, correct]) => ({ q, options, correct }));
+
+const rankRoles = [
+['👑 Główny Inspektor Transportu Drogowego',0x123b2a],
+['⭐ Zastępca Głównego Inspektora Transportu Drogowego',0x8b7500],
+['🏛️ Dyrektor Generalny GITD',0x174a35],
+['🏢 Dyrektor Biura / Departamentu',0x176b3a],
+['🎖️ Zastępca Dyrektora',0x247a50],
+['📋 Naczelnik Wydziału',0x2e8b57],
+['📋 Zastępca Naczelnika Wydziału',0x3aa76d],
+['🟢 Główny Inspektor',0x0b8f4a],
+['🟢 Starszy Inspektor',0x17a65a],
+['🟢 Inspektor',0x22b573],
+['🟢 Młodszy Inspektor',0x55c98b],
+['🟡 Aplikant Inspekcji',0xd9b51c],
+['🔰 Kandydat na Inspektora',0x808080]
+];
+const extraRoles = [
+['🎓 Instruktor ITD',0x2878c7],['📝 Egzaminator ITD',0x3b82f6],['👨‍🏫 Wykładowca',0x4f8ad9],['🚦 Instruktor Kontroli Drogowej',0x2563eb],
+['🚔 Dowódca Zespołu Kontrolnego',0x1f6f8b],['🚛 Inspektor Transportu Drogowego',0x218c6a],['⚙️ Inspektor Techniczny',0x6b7280],['📡 Inspektor CANARD',0x7c3aed],['🚨 Inspektor Kontroli Drogowej',0xef4444],['🔎 Inspektor ds. Przewozów',0x0891b2],['📑 Inspektor ds. Dokumentacji',0x64748b],
+['🟢 Pracownik ITD',0x16a34a],['🟢 Na służbie',0x22c55e],['⚫ Poza służbą',0x374151],['💤 Urlopowany',0x6b7280],['🎓 W trakcie szkolenia',0x2563eb],['⏳ Okres próbny',0xca8a04],['📋 Rekrutacja',0x94a3b8],['🏅 Zasłużony Inspektor',0xeab308],['🎖️ Emerytowany Inspektor',0x9ca3af],
+['👑 Właściciel',0xdc2626],['🛡️ Zarząd ITD',0xb91c1c],['🔨 Administrator',0xef4444],['🔧 Moderator',0xf97316],['🧰 Support',0x14b8a6],['🤖 Bot',0x64748b],['📝 Rekruter',0x8b5cf6],
+['🚔 Patrol Drogowy',0x0ea5e9],['🚛 Kontrola Transportu Ciężarowego',0x0284c7],['🚌 Kontrola Autobusów',0x0369a1],['🚕 Kontrola Transportu Osobowego',0x0e7490],['📡 CANARD',0x7e22ce],['⚠️ Kontrola Prędkości',0xf59e0b],['🧪 Kontrola Stanu Technicznego',0x65a30d],['📑 Kontrola Dokumentów',0x64748b],
+['Application',0x22c55e],['Exam',0x3b82f6],['Candidate',0xf59e0b],['Staff',0xdc2626]
 ];
 
-const commands = [
-  new SlashCommandBuilder()
-    .setName('itd-panel')
-    .setDescription('Wyświetla panel rekrutacyjny ITD')
-    .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
-  new SlashCommandBuilder()
-    .setName('itd-egzamin')
-    .setDescription('Wyświetla panel egzaminu ITD')
-].map(c => c.toJSON());
+const categories = {
+'📢 INFORMACJE':['📢・witamy-w-itd','📜・informacje-itd','📋・regulamin-serwera','📕・regulamin-itd','📖・zasady-służby','📢・ogłoszenia','📅・ważne-daty','❓・faq'],
+'🏛️ GŁÓWNY INSPEKTORAT':['👑・gabinet-głównego-inspektora','⭐・kierownictwo-itd','📋・zarządzenia','📜・decyzje','📢・komunikaty-kierownictwa','📁・dokumenty-kierownictwa','📊・raporty-kierownictwa'],
+'👮 KADRA ITD':['👮・kadra-itd','📋・lista-inspektorów','🎖️・stopnie-i-awanse','📊・statystyki-inspektorów','📅・grafik-służby','📝・raporty-służbowe','📂・akta-funkcjonariuszy','🏅・wyróżnienia','⚠️・kary-dyscyplinarne'],
+'🚛 KONTROLE DROGOWE':['🚛・kontrole-drogowe','🚔・patrole','📍・punkty-kontrolne','🛣️・trasy-kontrolne','🚚・transport-ciężarowy','🚌・transport-autobusowy','🚕・transport-osobowy','⚙️・stan-techniczny','📑・kontrola-dokumentów','⚠️・naruszenia'],
+'📡 CANARD':['📡・canard','📷・fotoradary','🚦・czerwone-światło','⚡・przekroczenie-prędkości','📸・materiał-dowodowy','📑・postępowania-canard','📊・statystyki-canard','🛠️・urządzenia-canard'],
+'🎓 SZKOLENIA':['🎓・centrum-szkoleniowe','📚・materiały-szkoleniowe','📝・egzaminy','❓・pytania-egzaminacyjne','🚛・szkolenie-kontroli','🚔・szkolenie-patrolowe','⚙️・szkolenie-techniczne','🎖️・egzamin-inspektorski','🏆・wyniki-egzaminów'],
+'📝 REKRUTACJA':['📢・nabór-do-itd','📋・wymagania','📝・podanie-do-itd','📂・wyniki-rekrutacji','🎓・kandydaci','📅・terminy-rekrutacji'],
+'🎫 TICKETY ITD':['🎫・centrum-ticketów'],
+'📁 DOKUMENTACJA':['📁・dokumentacja-itd','📜・ustawy-i-przepisy','📕・regulaminy','📋・procedury-kontroli','📑・wzory-dokumentów','📝・protokoły-kontroli','🚛・dokumentacja-pojazdów'],
+'🚨 OPERACYJNE':['🚨・dyspozytornia-itd','📻・łączność-itd','📍・lokalizacje-patroli','🚔・przydział-patroli','📡・meldunki','⚠️・zdarzenia','🚑・współpraca-ze-służbami'],
+'🔒 KANAŁY KADRY':['🔒・gabinet-kadry','🔒・narady','🔒・sprawy-dyscyplinarne','🔒・awanse-i-degradacje','🔒・zwolnienia','🔒・ocena-inspektorów','🔒・wewnętrzne-dokumenty']
+};
 
-async function registerCommands() {
-  const rest = new REST({ version: '10' }).setToken(TOKEN);
-  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
-  console.log('Slash commands ITD zostały zarejestrowane.');
+function cleanName(name){ return name.toLowerCase().replace(/[🟢👑⭐🏛️🏢🎖️📋📢📜📖📅❓👮🚛🚔📍🛣️🚚🚌🚕⚙️📑📡📷🚦⚡📸🛠️🎓📚📝❔🎫📁🚨📻⚠️🚑🔒]/gu,'').replace(/・/g,'-').trim(); }
+
+async function getOrCreateRole(guild, name, color, options={}) {
+  let role = guild.roles.cache.find(r => r.name === name);
+  if (!role) role = await guild.roles.create({ name, color, ...options });
+  return role;
+}
+async function getOrCreateCategory(guild, name) {
+  let c = guild.channels.cache.find(ch => ch.type === ChannelType.GuildCategory && ch.name === name);
+  if (!c) c = await guild.channels.create({ name, type: ChannelType.GuildCategory });
+  return c;
+}
+async function getOrCreateChannel(guild, name, parent, overwrites=[]) {
+  const clean = cleanName(name);
+  let ch = guild.channels.cache.find(x => x.type === ChannelType.GuildText && x.name === clean && x.parentId === parent.id);
+  if (!ch) ch = await guild.channels.create({ name: clean, type: ChannelType.GuildText, parent: parent.id, permissionOverwrites: overwrites });
+  return ch;
 }
 
-function recruitmentPanel() {
-  const embed = new EmbedBuilder()
-    .setColor(0x006b2e)
-    .setTitle('🟢 INSPEKCJA TRANSPORTU DROGOWEGO')
-    .setDescription(
-      '**REKRUTACJA DO ITD**\n\n' +
-      'Chcesz dołączyć do Inspekcji Transportu Drogowego? Wypełnij podanie, a następnie przystąp do egzaminu rekrutacyjnego.\n\n' +
-      '📋 **ETAP 1 — PODANIE**\n' +
-      'Kliknij **📝 Złóż podanie** i odpowiedz na pytania.\n\n' +
-      '🎓 **ETAP 2 — EGZAMIN**\n' +
-      `Egzamin składa się z **${questions.length} pytań**. Próg zaliczenia: **${PASS_SCORE}/${questions.length}**.\n\n` +
-      '📌 Pamiętaj o kulturze osobistej, znajomości zasad RP i wykonywaniu poleceń przełożonych.'
-    )
-    .setFooter({ text: 'Inspekcja Transportu Drogowego • Rekrutacja' });
-
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('itd_apply').setLabel('📝 Złóż podanie').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId('itd_exam_start').setLabel('🎓 Rozpocznij egzamin').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('itd_rules').setLabel('📜 Zasady').setStyle(ButtonStyle.Secondary)
-  );
-
-  return { embeds: [embed], components: [row] };
-}
-
-function examStartEmbed() {
-  return new EmbedBuilder()
-    .setColor(0x006b2e)
-    .setTitle('🎓 EGZAMIN REKRUTACYJNY ITD')
-    .setDescription(
-      `Egzamin zawiera **${questions.length} pytań** jednokrotnego wyboru.\n\n` +
-      `✅ Próg zaliczenia: **${PASS_SCORE}/${questions.length}**\n` +
-      '⏱️ Nie ma limitu czasu.\n' +
-      '⚠️ Po rozpoczęciu odpowiadaj samodzielnie.\n\n' +
-      'Kliknij przycisk poniżej, aby rozpocząć.'
-    );
-}
-
-function startButton() {
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('itd_exam_confirm_start').setLabel('🎓 Rozpocznij egzamin').setStyle(ButtonStyle.Success)
-  );
-}
-
-function questionMessage(index) {
-  const question = questions[index];
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId(`itd_exam_answer_${index}`)
-    .setPlaceholder('Wybierz odpowiedź...')
-    .addOptions(question.options.map((text, i) => ({
-      label: `${String.fromCharCode(65 + i)}. ${text}`.slice(0, 100),
-      value: String(i)
-    })));
-
-  const embed = new EmbedBuilder()
-    .setColor(0x006b2e)
-    .setTitle(`🎓 Egzamin ITD • Pytanie ${index + 1}/${questions.length}`)
-    .setDescription(`**${question.q}**\n\nWybierz jedną odpowiedź z listy.`)
-    .setFooter({ text: `Postęp: ${index}/${questions.length} odpowiedzi udzielonych` });
-
-  return {
-    embeds: [embed],
-    components: [new ActionRowBuilder().addComponents(menu)]
-  };
-}
-
-async function sendLog(channelId, embed) {
-  if (!channelId) return;
-  const channel = await client.channels.fetch(channelId).catch(() => null);
-  if (channel && channel.isTextBased()) await channel.send({ embeds: [embed] }).catch(() => {});
-}
-
-client.once('ready', async () => {
-  console.log(`Zalogowano jako ${client.user.tag}`);
-  try {
-    await registerCommands();
-  } catch (error) {
-    console.error('Nie udało się zarejestrować komend:', error);
-  }
-  client.user.setActivity('Rekrutacja ITD', { type: 3 });
-});
-
-client.on('interactionCreate', async interaction => {
-  try {
-    if (interaction.isChatInputCommand()) {
-      if (interaction.commandName === 'itd-panel') {
-        await interaction.channel.send(recruitmentPanel());
-        return interaction.reply({ content: '✅ Panel ITD został wysłany.', ephemeral: true });
-      }
-
-      if (interaction.commandName === 'itd-egzamin') {
-        await interaction.channel.send({ embeds: [examStartEmbed()], components: [startButton()] });
-        return interaction.reply({ content: '✅ Panel egzaminu został wysłany.', ephemeral: true });
-      }
-    }
-
-    if (interaction.isButton()) {
-      if (interaction.customId === 'itd_apply') {
-        const modal = new ModalBuilder().setCustomId('itd_application_modal').setTitle('📝 Podanie do ITD');
-        const fields = [
-          ['nick', 'Nick / nazwa postaci', 'Podaj swój nick lub imię postaci', TextInputStyle.Short],
-          ['age', 'Wiek', 'Podaj swój wiek', TextInputStyle.Short],
-          ['experience', 'Doświadczenie RP', 'Opisz krótko swoje doświadczenie w RP', TextInputStyle.Paragraph],
-          ['why', 'Dlaczego ITD?', 'Dlaczego chcesz dołączyć do ITD?', TextInputStyle.Paragraph],
-          ['strengths', 'Mocne strony', 'Jakie są Twoje mocne strony?', TextInputStyle.Paragraph]
-        ];
-        modal.addComponents(...fields.map(([id, label, placeholder, style]) => new ActionRowBuilder().addComponents(
-          new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(placeholder).setStyle(style).setRequired(true).setMaxLength(1000)
-        )));
-        return interaction.showModal(modal);
-      }
-
-      if (interaction.customId === 'itd_exam_start') {
-        return interaction.reply({ embeds: [examStartEmbed()], components: [startButton()], ephemeral: true });
-      }
-
-      if (interaction.customId === 'itd_exam_confirm_start') {
-        if (examSessions.has(interaction.user.id)) {
-          return interaction.reply({ content: '⚠️ Masz już rozpoczęty egzamin. Dokończ go przed rozpoczęciem kolejnego.', ephemeral: true });
-        }
-        examSessions.set(interaction.user.id, { index: 0, score: 0, startedAt: Date.now() });
-        return interaction.update(questionMessage(0));
-      }
-
-      if (interaction.customId === 'itd_rules') {
-        return interaction.reply({
-          embeds: [new EmbedBuilder()
-            .setColor(0x006b2e)
-            .setTitle('📜 Zasady rekrutacji ITD')
-            .setDescription(
-              '• Podanie musi zawierać prawdziwe informacje.\n' +
-              '• Kandydat powinien znać zasady RP obowiązujące na serwerze.\n' +
-              '• Podczas służby wymagane są kultura osobista i profesjonalizm.\n' +
-              '• Kandydat powinien wykonywać zgodne z regulaminem polecenia przełożonych.\n' +
-              '• Próba oszustwa podczas egzaminu może skutkować odrzuceniem rekrutacji.'
-            )],
-          ephemeral: true
-        });
-      }
-    }
-
-    if (interaction.isModalSubmit() && interaction.customId === 'itd_application_modal') {
-      const values = {
-        nick: interaction.fields.getTextInputValue('nick'),
-        age: interaction.fields.getTextInputValue('age'),
-        experience: interaction.fields.getTextInputValue('experience'),
-        why: interaction.fields.getTextInputValue('why'),
-        strengths: interaction.fields.getTextInputValue('strengths')
-      };
-
-      const embed = new EmbedBuilder()
-        .setColor(0x006b2e)
-        .setTitle('📝 NOWE PODANIE DO ITD')
-        .setThumbnail(interaction.user.displayAvatarURL({ extension: 'png', size: 256 }))
-        .addFields(
-          { name: '👤 Kandydat Discord', value: `${interaction.user} (${interaction.user.id})` },
-          { name: '🎭 Nick / postać', value: values.nick },
-          { name: '🔞 Wiek', value: values.age },
-          { name: '🎮 Doświadczenie RP', value: values.experience },
-          { name: '🚛 Dlaczego ITD?', value: values.why },
-          { name: '⭐ Mocne strony', value: values.strengths }
-        )
-        .setTimestamp()
-        .setFooter({ text: 'ITD • Rekrutacja' });
-
-      await sendLog(APPLICATION_LOG_CHANNEL_ID, embed);
-
-      if (CANDIDATE_ROLE_ID && interaction.guild) {
-        const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
-        if (member && !member.roles.cache.has(CANDIDATE_ROLE_ID)) {
-          await member.roles.add(CANDIDATE_ROLE_ID).catch(() => {});
-        }
-      }
-
-      return interaction.reply({
-        content: '✅ **Podanie zostało wysłane!**\n\nTeraz przejdź do egzaminu ITD. Powodzenia! 🚛',
-        ephemeral: true
-      });
-    }
-
-    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('itd_exam_answer_')) {
-      const session = examSessions.get(interaction.user.id);
-      if (!session) {
-        return interaction.reply({ content: '❌ Nie masz aktywnego egzaminu. Rozpocznij go ponownie.', ephemeral: true });
-      }
-
-      const index = Number(interaction.customId.split('_').pop());
-      if (index !== session.index) {
-        return interaction.reply({ content: '⚠️ To pytanie jest już nieaktualne.', ephemeral: true });
-      }
-
-      const answer = Number(interaction.values[0]);
-      const question = questions[index];
-      if (answer === question.correct) session.score++;
-      session.index++;
-
-      if (session.index >= questions.length) {
-        const passed = session.score >= PASS_SCORE;
-        const durationSeconds = Math.round((Date.now() - session.startedAt) / 1000);
-        const minutes = Math.floor(durationSeconds / 60);
-        const seconds = durationSeconds % 60;
-
-        const resultEmbed = new EmbedBuilder()
-          .setColor(passed ? 0x16a34a : 0xdc2626)
-          .setTitle(passed ? '✅ EGZAMIN ITD — ZALICZONY' : '❌ EGZAMIN ITD — NIEZALICZONY')
-          .setDescription(
-            `${interaction.user} zakończył egzamin rekrutacyjny.\n\n` +
-            `📊 **Wynik:** ${session.score}/${questions.length}\n` +
-            `🎯 **Próg:** ${PASS_SCORE}/${questions.length}\n` +
-            `⏱️ **Czas:** ${minutes} min ${seconds} s`
-          )
-          .setTimestamp();
-
-        await sendLog(EXAM_LOG_CHANNEL_ID, resultEmbed);
-        examSessions.delete(interaction.user.id);
-
-        if (passed && CANDIDATE_ROLE_ID && interaction.guild) {
-          const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
-          if (member && !member.roles.cache.has(CANDIDATE_ROLE_ID)) {
-            await member.roles.add(CANDIDATE_ROLE_ID).catch(() => {});
-          }
-        }
-
-        return interaction.update({
-          embeds: [resultEmbed],
-          components: []
-        });
-      }
-
-      return interaction.update(questionMessage(session.index));
-    }
-  } catch (error) {
-    console.error('Błąd interactionCreate:', error);
-    if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({ content: '❌ Wystąpił błąd. Spróbuj ponownie.', ephemeral: true }).catch(() => {});
+async function setupITD(guild) {
+  const everyone = guild.roles.everyone;
+  const roleMap = {};
+  for (const [name,color] of [...rankRoles,...extraRoles]) roleMap[name] = await getOrCreateRole(guild,name,color);
+  const staff = roleMap['Staff'];
+  const candidate = roleMap['Candidate'];
+  const overwritesStaff = [{id:everyone.id,deny:[PermissionsBitField.Flags.ViewChannel]},{id:staff.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]}];
+  const overwritesCandidate = [{id:everyone.id,deny:[PermissionsBitField.Flags.ViewChannel]},{id:candidate.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]}];
+  const created = [];
+  for (const [catName, channelNames] of Object.entries(categories)) {
+    const cat = await getOrCreateCategory(guild,catName);
+    for (const channelName of channelNames) {
+      const privateCat = catName === '🔒 KANAŁY KADRY';
+      const ch = await getOrCreateChannel(guild,channelName,cat,privateCat?overwritesStaff:[]);
+      created.push(ch.name);
     }
   }
+  const appRole = roleMap['Application'];
+  const examRole = roleMap['Exam'];
+  const appChannel = guild.channels.cache.find(c=>c.name==='podanie-do-itd');
+  if (appChannel) await appChannel.send(applicationPanel()).catch(()=>{});
+  const examChannel = guild.channels.cache.find(c=>c.name==='egzaminy');
+  if (examChannel) await examChannel.send({embeds:[examPanel()],components:[examStartRow()]}).catch(()=>{});
+  return { roleCount:Object.keys(roleMap).length, channelCount:created.length, appRole, examRole, candidate, staff };
+}
+
+function applicationPanel(){
+ const embed = new EmbedBuilder().setColor(0x16a34a).setTitle('📝 PODANIE DO ITD').setDescription('Kliknij przycisk poniżej i wypełnij formularz rekrutacyjny. Po wysłaniu podanie trafia do kadry.');
+ return {embeds:[embed],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('itd_apply').setLabel('📝 Złóż podanie').setStyle(ButtonStyle.Success))]};
+}
+function examPanel(){return new EmbedBuilder().setColor(0x2563eb).setTitle('🎓 EGZAMIN ITD').setDescription(`Egzamin: **${questions.length} pytań**. Próg: **${PASS_SCORE}/${questions.length}**.`);}
+function examStartRow(){return new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('itd_exam_confirm_start').setLabel('🎓 Rozpocznij egzamin').setStyle(ButtonStyle.Primary));}
+function questionMessage(i){const q=questions[i];const menu=new StringSelectMenuBuilder().setCustomId(`itd_exam_answer_${i}`).setPlaceholder('Wybierz odpowiedź...').addOptions(q.options.map((x,n)=>({label:`${String.fromCharCode(65+n)}. ${x}`.slice(0,100),value:String(n)})));return {embeds:[new EmbedBuilder().setColor(0x2563eb).setTitle(`🎓 Egzamin ITD • ${i+1}/${questions.length}`).setDescription(`**${q.q}**`)],components:[new ActionRowBuilder().addComponents(menu)]};}
+async function sendLog(guild,name,embed){const ch=guild.channels.cache.find(c=>c.name===cleanName(name));if(ch&&ch.isTextBased()) await ch.send({embeds:[embed]}).catch(()=>{});}
+
+const commands=[
+ new SlashCommandBuilder().setName('itd-setup').setDescription('Automatycznie tworzy pełną strukturę ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+ new SlashCommandBuilder().setName('itd-panel').setDescription('Wysyła panel rekrutacyjny ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
+ new SlashCommandBuilder().setName('itd-egzamin').setDescription('Wysyła panel egzaminu ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild)
+].map(x=>x.toJSON());
+
+async function registerCommands(){const rest=new REST({version:'10'}).setToken(TOKEN);await rest.put(Routes.applicationGuildCommands(CLIENT_ID,GUILD_ID),{body:commands});}
+client.once('ready',async()=>{console.log(`Zalogowano jako ${client.user.tag}`);try{await registerCommands();}catch(e){console.error(e);}client.user.setActivity('Inspekcja Transportu Drogowego',{type:3});});
+
+client.on('interactionCreate',async interaction=>{try{
+ if(interaction.isChatInputCommand()){
+  if(interaction.commandName==='itd-setup'){await interaction.deferReply({ephemeral:true});const r=await setupITD(interaction.guild);return interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n📝 Utworzono/odnaleziono: Application, Exam, Candidate, Staff oraz pełną strukturę ITD.`);}
+  if(interaction.commandName==='itd-panel'){await interaction.channel.send(applicationPanel());return interaction.reply({content:'✅ Panel podań wysłany.',ephemeral:true});}
+  if(interaction.commandName==='itd-egzamin'){await interaction.channel.send({embeds:[examPanel()],components:[examStartRow()]});return interaction.reply({content:'✅ Panel egzaminu wysłany.',ephemeral:true});}
+ }
+ if(interaction.isButton()){
+  if(interaction.customId==='itd_apply'){
+   const modal=new ModalBuilder().setCustomId('itd_application_modal').setTitle('📝 Podanie do ITD');
+   const fields=[['nick','Nick / nazwa postaci','Podaj nick',TextInputStyle.Short],['age','Wiek','Podaj wiek',TextInputStyle.Short],['experience','Doświadczenie RP','Opisz doświadczenie',TextInputStyle.Paragraph],['why','Dlaczego ITD?','Dlaczego chcesz dołączyć?',TextInputStyle.Paragraph],['strengths','Mocne strony','Podaj mocne strony',TextInputStyle.Paragraph]];
+   modal.addComponents(...fields.map(([id,label,ph,style])=>new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(ph).setStyle(style).setRequired(true))));return interaction.showModal(modal);
+  }
+  if(interaction.customId==='itd_exam_confirm_start'){
+   if(examSessions.has(interaction.user.id))return interaction.reply({content:'Masz już rozpoczęty egzamin.',ephemeral:true});
+   examSessions.set(interaction.user.id,{index:0,score:0});return interaction.reply({...questionMessage(0),ephemeral:true});
+  }
+ }
+ if(interaction.isModalSubmit()&&interaction.customId==='itd_application_modal'){
+  const data=['nick','age','experience','why','strengths'].map(id=>[id,interaction.fields.getTextInputValue(id)]);
+  const embed=new EmbedBuilder().setColor(0x16a34a).setTitle('📝 NOWE PODANIE ITD').setAuthor({name:interaction.user.tag,iconURL:interaction.user.displayAvatarURL()}).addFields(data.map(([n,v])=>({name:n.toUpperCase(),value:v.slice(0,1024)}))).setTimestamp();
+  await sendLog(interaction.guild,'wyniki-rekrutacji',embed);const role=interaction.guild.roles.cache.find(r=>r.name==='Candidate');if(role&&!interaction.member.roles.cache.has(role.id))await interaction.member.roles.add(role).catch(()=>{});return interaction.reply({content:'✅ Podanie zostało wysłane. Otrzymujesz rolę Candidate.',ephemeral:true});
+ }
+ if(interaction.isStringSelectMenu()&&interaction.customId.startsWith('itd_exam_answer_')){
+  const session=examSessions.get(interaction.user.id);if(!session)return interaction.reply({content:'Nie masz aktywnego egzaminu.',ephemeral:true});
+  const i=Number(interaction.customId.split('_').pop());if(i!==session.index)return interaction.reply({content:'To pytanie jest już nieaktywne.',ephemeral:true});
+  if(Number(interaction.values[0])===questions[i].correct)session.score++;
+  session.index++;
+  if(session.index>=questions.length){const score=session.score;examSessions.delete(interaction.user.id);const passed=score>=PASS_SCORE;const embed=new EmbedBuilder().setColor(passed?0x16a34a:0xdc2626).setTitle('🎓 WYNIK EGZAMINU ITD').setDescription(`Kandydat: <@${interaction.user.id}>\nWynik: **${score}/${questions.length}**\nStatus: ${passed?'✅ ZALICZONY':'❌ NIEZALICZONY'}`).setTimestamp();await sendLog(interaction.guild,'wyniki-egzaminów',embed);return interaction.update({embeds:[embed],components:[]});}
+  return interaction.update(questionMessage(session.index));
+ }
+}catch(e){console.error(e);if(!interaction.replied&&!interaction.deferred)interaction.reply({content:'❌ Wystąpił błąd.',ephemeral:true}).catch(()=>{});}
 });
-
-process.on('unhandledRejection', error => console.error('Unhandled rejection:', error));
-process.on('uncaughtException', error => console.error('Uncaught exception:', error));
-
 client.login(TOKEN);
