@@ -118,16 +118,13 @@ function channelNameKey(name) {
     .replace(/^-+|-+$/g, '');
 }
 
-async function getOrCreateCategory(guild, name) {
-  let c = guild.channels.cache.find(ch => ch.type === ChannelType.GuildCategory && channelNameKey(ch.name) === channelNameKey(name));
-  if (!c) c = await guild.channels.create({ name, type: ChannelType.GuildCategory });
-  return c;
+function findCategory(guild, name) {
+  return guild.channels.cache.find(ch => ch.type === ChannelType.GuildCategory && channelNameKey(ch.name) === channelNameKey(name));
 }
-async function getOrCreateChannel(guild, name, parent, overwrites=[]) {
-  const clean = cleanName(name);
-  let ch = guild.channels.cache.find(x => x.type === ChannelType.GuildText && channelNameKey(x.name) === channelNameKey(clean) && x.parentId === parent.id);
-  if (!ch) ch = await guild.channels.create({ name: clean, type: ChannelType.GuildText, parent: parent.id, permissionOverwrites: overwrites });
-  return ch;
+
+function findChannel(guild, name, parent) {
+  return guild.channels.cache.find(ch => ch.type === ChannelType.GuildText &&
+    channelNameKey(ch.name) === channelNameKey(name) && ch.parentId === parent.id);
 }
 
 async function syncOverwrites(channel, overwrites) {
@@ -161,27 +158,29 @@ async function setupITD(guild, reportProgress) {
     {id:citizen.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory]},
     ...management.map(r => ({id:r.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory,PermissionsBitField.Flags.ManageChannels,PermissionsBitField.Flags.ManageMessages]}))
   ];
-  const created = [];
+  const configured = [];
   await reportProgress(0);
   for (const [catName, channelNames] of Object.entries(categories)) {
-    const cat = await getOrCreateCategory(guild,catName);
+    const cat = findCategory(guild,catName);
+    if (!cat) continue;
     const privateCat = catName === '🔒 KANAŁY KADRY';
     const citizenCat = catName === '👥 STREFA OBYWATELA';
     for (const channelName of channelNames) {
-      const ch = await getOrCreateChannel(guild,channelName,cat,citizenCat?overwritesCitizen:(privateCat?overwritesStaff:[]));
+      const ch = findChannel(guild,channelName,cat);
+      if (!ch) continue;
       if (citizenCat) await syncOverwrites(ch, overwritesCitizen);
       if (privateCat) await syncOverwrites(ch, overwritesStaff);
-      created.push(ch.name);
+      configured.push(ch.name);
     }
     if (citizenCat) await syncOverwrites(cat, overwritesCitizen);
     if (privateCat) await syncOverwrites(cat, overwritesStaff);
-    await reportProgress(created.length);
+    await reportProgress(configured.length);
   }
   const appChannel = guild.channels.cache.find(c=>c.name==='podanie-do-itd');
   if (appChannel) await appChannel.send(applicationPanel()).catch(()=>{});
   const examChannel = guild.channels.cache.find(c=>c.name==='egzaminy');
   if (examChannel) await examChannel.send({embeds:[examPanel()],components:[examStartRow()]}).catch(()=>{});
-  return { roleCount:Object.keys(roleMap).length, channelCount:created.length };
+  return { roleCount:Object.keys(roleMap).length, channelCount:configured.length };
 }
 
 function applicationPanel(){ const embed = new EmbedBuilder().setColor(0x16a34a).setTitle('📝 PODANIE DO ITD').setDescription('Kliknij przycisk poniżej i wypełnij formularz rekrutacyjny. Po wysłaniu podanie trafia do kadry.'); return {embeds:[embed],components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('itd_apply').setLabel('📝 Złóż podanie').setStyle(ButtonStyle.Success))]}; }
@@ -192,7 +191,7 @@ function oralPanel(){const embed=new EmbedBuilder().setColor(0x8b5cf6).setTitle(
 async function sendLog(guild,name,embed){const ch=guild.channels.cache.find(c=>c.name===cleanName(name));if(ch&&ch.isTextBased()) await ch.send({embeds:[embed]}).catch(()=>{});}
 
 const commands=[
- new SlashCommandBuilder().setName('itd-setup').setDescription('Automatycznie tworzy pełną strukturę ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+ new SlashCommandBuilder().setName('itd-setup').setDescription('Konfiguruje role i istniejące kanały ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
  new SlashCommandBuilder().setName('itd-panel').setDescription('Wysyła panel podań ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
  new SlashCommandBuilder().setName('itd-egzamin').setDescription('Wysyła panel trudnego egzaminu ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
  new SlashCommandBuilder().setName('itd-ustny').setDescription('Wysyła osobny zestaw pytań do egzaminu ustnego ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild)
@@ -211,11 +210,10 @@ client.on('interactionCreate',async interaction=>{try{
    activeSetups.add(guildId);
    try {
     await interaction.reply({content:'⏳ Konfiguruję role ITD…',flags:MessageFlags.Ephemeral});
-    const channelTotal = Object.values(categories).reduce((total, names) => total + names.length, 0);
     const r = await setupITD(interaction.guild, async count => {
-     await interaction.editReply(`⏳ Konfiguruję kanały ITD • ${count}/${channelTotal}`).catch(console.error);
+     await interaction.editReply(`⏳ Skonfigurowane istniejące kanały ITD: ${count}`).catch(console.error);
     });
-    await interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n👥 Strefa obywatela: tylko rola **Obywatel** + Zarząd.\n🛡️ Role Zarządu otrzymały **Administratora / pełne uprawnienia**.\n🎓 Egzamin: **${questions.length} pytań**, próg **${PASS_SCORE}/${questions.length}**.`);
+    await interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Istniejące kanały: **${r.channelCount}**\n👥 Strefa obywatela: tylko rola **Obywatel** + Zarząd.\n🛡️ Role Zarządu otrzymały **Administratora / pełne uprawnienia**.\n🎓 Egzamin: **${questions.length} pytań**, próg **${PASS_SCORE}/${questions.length}**.`);
    } catch (error) {
     console.error('Błąd /itd-setup:', error);
     const code = error.code ? ` (kod ${error.code})` : '';
