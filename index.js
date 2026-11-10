@@ -111,14 +111,21 @@ async function getOrCreateRole(guild, name, color, options={}) {
   if (managementRoles.has(name) && !role.permissions.has(PermissionsBitField.Flags.Administrator)) await role.setPermissions(PermissionsBitField.Flags.Administrator).catch(() => {});
   return role;
 }
+function channelNameKey(name) {
+  return name.normalize('NFC').toLowerCase()
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '')
+    .replace(/[\s・_-]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 async function getOrCreateCategory(guild, name) {
-  let c = guild.channels.cache.find(ch => ch.type === ChannelType.GuildCategory && ch.name === name);
+  let c = guild.channels.cache.find(ch => ch.type === ChannelType.GuildCategory && channelNameKey(ch.name) === channelNameKey(name));
   if (!c) c = await guild.channels.create({ name, type: ChannelType.GuildCategory });
   return c;
 }
 async function getOrCreateChannel(guild, name, parent, overwrites=[]) {
   const clean = cleanName(name);
-  let ch = guild.channels.cache.find(x => x.type === ChannelType.GuildText && x.name === clean && x.parentId === parent.id);
+  let ch = guild.channels.cache.find(x => x.type === ChannelType.GuildText && channelNameKey(x.name) === channelNameKey(clean) && x.parentId === parent.id);
   if (!ch) ch = await guild.channels.create({ name: clean, type: ChannelType.GuildText, parent: parent.id, permissionOverwrites: overwrites });
   return ch;
 }
@@ -136,6 +143,7 @@ async function syncOverwrites(channel, overwrites) {
 const activeSetups = new Set();
 
 async function setupITD(guild, reportProgress) {
+  await Promise.all([guild.channels.fetch(), guild.roles.fetch()]);
   const everyone = guild.roles.everyone;
   const roleMap = {};
   for (const [name,color] of [...rankRoles,...extraRoles]) roleMap[name] = await getOrCreateRole(guild,name,color);
