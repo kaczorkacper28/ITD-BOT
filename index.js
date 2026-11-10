@@ -174,7 +174,7 @@ const commands=[
 ].map(x=>x.toJSON());
 
 async function registerCommands(){const rest=new REST({version:'10'}).setToken(TOKEN);await rest.put(Routes.applicationGuildCommands(CLIENT_ID,GUILD_ID),{body:commands});}
-client.once('ready',async()=>{console.log(`Zalogowano jako ${client.user.tag}`);try{await registerCommands();}catch(e){console.error(e);}client.user.setActivity('Egzaminy ITD',{type:3});});
+client.once('clientReady',async()=>{console.log(`Zalogowano jako ${client.user.tag}`);try{await registerCommands();}catch(e){console.error(e);}client.user.setActivity('Egzaminy ITD',{type:3});});
 
 client.on('interactionCreate',async interaction=>{try{
  if(interaction.isChatInputCommand()){
