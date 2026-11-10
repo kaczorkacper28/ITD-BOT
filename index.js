@@ -1,6 +1,6 @@
 require('dotenv').config({ quiet: true });
 const {
-  Client, GatewayIntentBits, PermissionsBitField, ChannelType,
+  Client, GatewayIntentBits, PermissionsBitField, ChannelType, MessageFlags,
   REST, Routes, SlashCommandBuilder, EmbedBuilder,
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder,
   TextInputBuilder, TextInputStyle, StringSelectMenuBuilder
@@ -157,9 +157,9 @@ async function setupITD(guild, reportProgress) {
   await reportProgress(0);
   for (const [catName, channelNames] of Object.entries(categories)) {
     const cat = await getOrCreateCategory(guild,catName);
+    const privateCat = catName === '🔒 KANAŁY KADRY';
+    const citizenCat = catName === '👥 STREFA OBYWATELA';
     for (const channelName of channelNames) {
-      const privateCat = catName === '🔒 KANAŁY KADRY';
-      const citizenCat = catName === '👥 STREFA OBYWATELA';
       const ch = await getOrCreateChannel(guild,channelName,cat,citizenCat?overwritesCitizen:(privateCat?overwritesStaff:[]));
       if (citizenCat) await syncOverwrites(ch, overwritesCitizen);
       if (privateCat) await syncOverwrites(ch, overwritesStaff);
@@ -198,11 +198,11 @@ client.on('interactionCreate',async interaction=>{try{
   if (interaction.commandName === 'itd-setup') {
    const guildId = interaction.guildId;
    if (activeSetups.has(guildId)) {
-    return interaction.reply({content:'Konfiguracja ITD już trwa na tym serwerze.',ephemeral:true});
+    return interaction.reply({content:'Konfiguracja ITD już trwa na tym serwerze.',flags:MessageFlags.Ephemeral});
    }
    activeSetups.add(guildId);
    try {
-    await interaction.reply({content:'⏳ Konfiguruję role ITD…',ephemeral:true});
+    await interaction.reply({content:'⏳ Konfiguruję role ITD…',flags:MessageFlags.Ephemeral});
     const channelTotal = Object.values(categories).reduce((total, names) => total + names.length, 0);
     const r = await setupITD(interaction.guild, async count => {
      await interaction.editReply(`⏳ Konfiguruję kanały ITD • ${count}/${channelTotal}`).catch(console.error);
@@ -213,15 +213,15 @@ client.on('interactionCreate',async interaction=>{try{
     const code = error.code ? ` (kod ${error.code})` : '';
     const content = `❌ Konfiguracja ITD została przerwana${code}. Szczegóły są w logach bota.`;
     if (interaction.replied) await interaction.editReply(content).catch(console.error);
-    else await interaction.reply({content,ephemeral:true}).catch(console.error);
+    else await interaction.reply({content,flags:MessageFlags.Ephemeral}).catch(console.error);
    } finally {
     activeSetups.delete(guildId);
    }
    return;
   }
-  if(interaction.commandName==='itd-panel'){await interaction.channel.send(applicationPanel());return interaction.reply({content:'✅ Panel podań wysłany.',ephemeral:true});}
-  if(interaction.commandName==='itd-egzamin'){await interaction.channel.send({embeds:[examPanel()],components:[examStartRow()]});return interaction.reply({content:`✅ Panel trudnego egzaminu wysłany. ${questions.length} pytań, próg ${PASS_SCORE}/${questions.length}.`,ephemeral:true});}
-  if(interaction.commandName==='itd-ustny'){await interaction.channel.send({embeds:[oralPanel()]});return interaction.reply({content:`✅ Wysłano ${oralQuestions.length} osobnych pytań ustnych ITD.`,ephemeral:true});}
+  if(interaction.commandName==='itd-panel'){await interaction.channel.send(applicationPanel());return interaction.reply({content:'✅ Panel podań wysłany.',flags:MessageFlags.Ephemeral});}
+  if(interaction.commandName==='itd-egzamin'){await interaction.channel.send({embeds:[examPanel()],components:[examStartRow()]});return interaction.reply({content:`✅ Panel trudnego egzaminu wysłany. ${questions.length} pytań, próg ${PASS_SCORE}/${questions.length}.`,flags:MessageFlags.Ephemeral});}
+  if(interaction.commandName==='itd-ustny'){await interaction.channel.send({embeds:[oralPanel()]});return interaction.reply({content:`✅ Wysłano ${oralQuestions.length} osobnych pytań ustnych ITD.`,flags:MessageFlags.Ephemeral});}
  }
  if(interaction.isButton()){
   if(interaction.customId==='itd_apply'){
@@ -230,24 +230,24 @@ client.on('interactionCreate',async interaction=>{try{
    modal.addComponents(...fields.map(([id,label,ph,style])=>new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label).setPlaceholder(ph).setStyle(style).setRequired(true))));return interaction.showModal(modal);
   }
   if(interaction.customId==='itd_exam_confirm_start'){
-   if(examSessions.has(interaction.user.id))return interaction.reply({content:'Masz już rozpoczęty egzamin.',ephemeral:true});
-   examSessions.set(interaction.user.id,{index:0,score:0});return interaction.reply({...questionMessage(0),ephemeral:true});
+   if(examSessions.has(interaction.user.id))return interaction.reply({content:'Masz już rozpoczęty egzamin.',flags:MessageFlags.Ephemeral});
+   examSessions.set(interaction.user.id,{index:0,score:0});return interaction.reply({...questionMessage(0),flags:MessageFlags.Ephemeral});
   }
  }
  if(interaction.isModalSubmit()&&interaction.customId==='itd_application_modal'){
   const data=['nick','age','experience','why','strengths'].map(id=>[id,interaction.fields.getTextInputValue(id)]);
   const embed=new EmbedBuilder().setColor(0x16a34a).setTitle('📝 NOWE PODANIE ITD').setAuthor({name:interaction.user.tag,iconURL:interaction.user.displayAvatarURL()}).addFields(data.map(([n,v])=>({name:n.toUpperCase(),value:v.slice(0,1024)}))).setTimestamp();
-  await sendLog(interaction.guild,'wyniki-rekrutacji',embed);const role=interaction.guild.roles.cache.find(r=>r.name==='Candidate');if(role&&!interaction.member.roles.cache.has(role.id))await interaction.member.roles.add(role).catch(()=>{});return interaction.reply({content:'✅ Podanie zostało wysłane. Otrzymujesz rolę Candidate.',ephemeral:true});
+  await sendLog(interaction.guild,'wyniki-rekrutacji',embed);const role=interaction.guild.roles.cache.find(r=>r.name==='Candidate');if(role&&!interaction.member.roles.cache.has(role.id))await interaction.member.roles.add(role).catch(()=>{});return interaction.reply({content:'✅ Podanie zostało wysłane. Otrzymujesz rolę Candidate.',flags:MessageFlags.Ephemeral});
  }
  if(interaction.isStringSelectMenu()&&interaction.customId.startsWith('itd_exam_answer_')){
-  const session=examSessions.get(interaction.user.id);if(!session)return interaction.reply({content:'Nie masz aktywnego egzaminu.',ephemeral:true});
-  const i=Number(interaction.customId.split('_').pop());if(i!==session.index)return interaction.reply({content:'To pytanie jest już nieaktywne.',ephemeral:true});
+  const session=examSessions.get(interaction.user.id);if(!session)return interaction.reply({content:'Nie masz aktywnego egzaminu.',flags:MessageFlags.Ephemeral});
+  const i=Number(interaction.customId.split('_').pop());if(i!==session.index)return interaction.reply({content:'To pytanie jest już nieaktywne.',flags:MessageFlags.Ephemeral});
   if(Number(interaction.values[0])===questions[i].correct)session.score++;
   session.index++;
   if(session.index>=questions.length){const score=session.score;examSessions.delete(interaction.user.id);const passed=score>=PASS_SCORE;const embed=new EmbedBuilder().setColor(passed?0x16a34a:0xdc2626).setTitle('🎓 WYNIK TRUDNEGO EGZAMINU ITD').setDescription(`Kandydat: <@${interaction.user.id}>\nWynik: **${score}/${questions.length}**\nPróg: **${PASS_SCORE}/${questions.length}**\nStatus: ${passed?'✅ ZALICZONY':'❌ NIEZALICZONY'}`).setTimestamp();await sendLog(interaction.guild,'wyniki-egzaminów',embed);return interaction.update({embeds:[embed],components:[]});}
   return interaction.update(questionMessage(session.index));
  }
-}catch(e){console.error(e);if(!interaction.replied&&!interaction.deferred)interaction.reply({content:'❌ Wystąpił błąd.',ephemeral:true}).catch(()=>{});}
+}catch(e){console.error(e);if(!interaction.replied&&!interaction.deferred)interaction.reply({content:'❌ Wystąpił błąd.',flags:MessageFlags.Ephemeral}).catch(()=>{});}
 });
 console.log('Łączenie ITD BOT z Discordem…');
 client.login(TOKEN).catch(error => {
