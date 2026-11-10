@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const {
   Client, GatewayIntentBits, PermissionsBitField, ChannelType,
   REST, Routes, SlashCommandBuilder, EmbedBuilder,
@@ -249,4 +249,9 @@ client.on('interactionCreate',async interaction=>{try{
  }
 }catch(e){console.error(e);if(!interaction.replied&&!interaction.deferred)interaction.reply({content:'❌ Wystąpił błąd.',ephemeral:true}).catch(()=>{});}
 });
-client.login(TOKEN);
+console.log('Łączenie ITD BOT z Discordem…');
+client.login(TOKEN).catch(error => {
+  console.error('Nie udało się zalogować ITD BOT:', error.message);
+  client.destroy();
+  process.exitCode = 1;
+});
