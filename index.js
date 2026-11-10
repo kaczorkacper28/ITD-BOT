@@ -104,7 +104,10 @@ function cleanName(name){ return name.toLowerCase().replace(/[🟢👑⭐🏛️
 
 async function getOrCreateRole(guild, name, color, options={}) {
   let role = guild.roles.cache.find(r => r.name === name);
-  if (!role) role = await guild.roles.create({ name, color, ...options });
+  if (!role) {
+    const permissions = managementRoles.has(name) ? PermissionsBitField.Flags.Administrator : options.permissions;
+    role = await guild.roles.create({ name, color, ...options, permissions });
+  }
   if (managementRoles.has(name) && !role.permissions.has(PermissionsBitField.Flags.Administrator)) await role.setPermissions(PermissionsBitField.Flags.Administrator).catch(() => {});
   return role;
 }
@@ -120,7 +123,19 @@ async function getOrCreateChannel(guild, name, parent, overwrites=[]) {
   return ch;
 }
 
-async function setupITD(guild) {
+async function syncOverwrites(channel, overwrites) {
+  const current = channel.permissionOverwrites.cache;
+  const matches = current.size === overwrites.length && overwrites.every(({id, allow, deny}) => {
+    const existing = current.get(id);
+    return existing && existing.allow.bitfield === PermissionsBitField.resolve(allow ?? []) &&
+      existing.deny.bitfield === PermissionsBitField.resolve(deny ?? []);
+  });
+  if (!matches) await channel.permissionOverwrites.set(overwrites);
+}
+
+const activeSetups = new Set();
+
+async function setupITD(guild, reportProgress) {
   const everyone = guild.roles.everyone;
   const roleMap = {};
   for (const [name,color] of [...rankRoles,...extraRoles]) roleMap[name] = await getOrCreateRole(guild,name,color);
@@ -139,18 +154,20 @@ async function setupITD(guild) {
     ...management.map(r => ({id:r.id,allow:[PermissionsBitField.Flags.ViewChannel,PermissionsBitField.Flags.SendMessages,PermissionsBitField.Flags.ReadMessageHistory,PermissionsBitField.Flags.ManageChannels,PermissionsBitField.Flags.ManageMessages]}))
   ];
   const created = [];
+  await reportProgress(0);
   for (const [catName, channelNames] of Object.entries(categories)) {
     const cat = await getOrCreateCategory(guild,catName);
     for (const channelName of channelNames) {
       const privateCat = catName === '🔒 KANAŁY KADRY';
       const citizenCat = catName === '👥 STREFA OBYWATELA';
       const ch = await getOrCreateChannel(guild,channelName,cat,citizenCat?overwritesCitizen:(privateCat?overwritesStaff:[]));
-      if (citizenCat) await ch.permissionOverwrites.set(overwritesCitizen).catch(()=>{});
-      if (privateCat) await ch.permissionOverwrites.set(overwritesStaff).catch(()=>{});
+      if (citizenCat) await syncOverwrites(ch, overwritesCitizen);
+      if (privateCat) await syncOverwrites(ch, overwritesStaff);
       created.push(ch.name);
     }
-    if (citizenCat) await cat.permissionOverwrites.set(overwritesCitizen).catch(()=>{});
-    if (privateCat) await cat.permissionOverwrites.set(overwritesStaff).catch(()=>{});
+    if (citizenCat) await syncOverwrites(cat, overwritesCitizen);
+    if (privateCat) await syncOverwrites(cat, overwritesStaff);
+    await reportProgress(created.length);
   }
   const appChannel = guild.channels.cache.find(c=>c.name==='podanie-do-itd');
   if (appChannel) await appChannel.send(applicationPanel()).catch(()=>{});
@@ -178,7 +195,30 @@ client.once('clientReady',async()=>{console.log(`Zalogowano jako ${client.user.t
 
 client.on('interactionCreate',async interaction=>{try{
  if(interaction.isChatInputCommand()){
-  if(interaction.commandName==='itd-setup'){await interaction.deferReply({ephemeral:true});const r=await setupITD(interaction.guild);return interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n👥 Strefa obywatela: tylko rola **Obywatel** + Zarząd.\n🛡️ Role Zarządu otrzymały **Administratora / pełne uprawnienia**.\n🎓 Egzamin: **${questions.length} pytań**, próg **${PASS_SCORE}/${questions.length}**.`);}
+  if (interaction.commandName === 'itd-setup') {
+   const guildId = interaction.guildId;
+   if (activeSetups.has(guildId)) {
+    return interaction.reply({content:'Konfiguracja ITD już trwa na tym serwerze.',ephemeral:true});
+   }
+   activeSetups.add(guildId);
+   try {
+    await interaction.reply({content:'⏳ Konfiguruję role ITD…',ephemeral:true});
+    const channelTotal = Object.values(categories).reduce((total, names) => total + names.length, 0);
+    const r = await setupITD(interaction.guild, async count => {
+     await interaction.editReply(`⏳ Konfiguruję kanały ITD • ${count}/${channelTotal}`).catch(console.error);
+    });
+    await interaction.editReply(`✅ **ITD-SETUP zakończony!**\n👮 Role: **${r.roleCount}**\n📁 Kanały: **${r.channelCount}**\n👥 Strefa obywatela: tylko rola **Obywatel** + Zarząd.\n🛡️ Role Zarządu otrzymały **Administratora / pełne uprawnienia**.\n🎓 Egzamin: **${questions.length} pytań**, próg **${PASS_SCORE}/${questions.length}**.`);
+   } catch (error) {
+    console.error('Błąd /itd-setup:', error);
+    const code = error.code ? ` (kod ${error.code})` : '';
+    const content = `❌ Konfiguracja ITD została przerwana${code}. Szczegóły są w logach bota.`;
+    if (interaction.replied) await interaction.editReply(content).catch(console.error);
+    else await interaction.reply({content,ephemeral:true}).catch(console.error);
+   } finally {
+    activeSetups.delete(guildId);
+   }
+   return;
+  }
   if(interaction.commandName==='itd-panel'){await interaction.channel.send(applicationPanel());return interaction.reply({content:'✅ Panel podań wysłany.',ephemeral:true});}
   if(interaction.commandName==='itd-egzamin'){await interaction.channel.send({embeds:[examPanel()],components:[examStartRow()]});return interaction.reply({content:`✅ Panel trudnego egzaminu wysłany. ${questions.length} pytań, próg ${PASS_SCORE}/${questions.length}.`,ephemeral:true});}
   if(interaction.commandName==='itd-ustny'){await interaction.channel.send({embeds:[oralPanel()]});return interaction.reply({content:`✅ Wysłano ${oralQuestions.length} osobnych pytań ustnych ITD.`,ephemeral:true});}
