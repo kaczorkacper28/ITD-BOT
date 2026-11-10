@@ -6,6 +6,8 @@ const {
   TextInputBuilder, TextInputStyle, StringSelectMenuBuilder
 } = require('discord.js');
 
+const tickets = require('./tickets');
+
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
@@ -191,6 +193,7 @@ function oralPanel(){const embed=new EmbedBuilder().setColor(0x8b5cf6).setTitle(
 async function sendLog(guild,name,embed){const ch=guild.channels.cache.find(c=>c.name===cleanName(name));if(ch&&ch.isTextBased()) await ch.send({embeds:[embed]}).catch(()=>{});}
 
 const commands=[
+ tickets.command,
  new SlashCommandBuilder().setName('itd-setup').setDescription('Konfiguruje role i istniejące kanały ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
  new SlashCommandBuilder().setName('itd-panel').setDescription('Wysyła panel podań ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
  new SlashCommandBuilder().setName('itd-egzamin').setDescription('Wysyła panel trudnego egzaminu ITD').setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
@@ -201,6 +204,7 @@ async function registerCommands(){const rest=new REST({version:'10'}).setToken(T
 client.once('clientReady',async()=>{console.log(`Zalogowano jako ${client.user.tag}`);try{await registerCommands();}catch(e){console.error(e);}client.user.setActivity('Egzaminy ITD',{type:3});});
 
 client.on('interactionCreate',async interaction=>{try{
+ if (await tickets.handle(interaction)) return;
  if(interaction.isChatInputCommand()){
   if (interaction.commandName === 'itd-setup') {
    const guildId = interaction.guildId;
